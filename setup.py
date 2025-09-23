@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'draw_triangle = ros_behaviors_fsm.draw_triangle:main',
         ],
     },
 )
