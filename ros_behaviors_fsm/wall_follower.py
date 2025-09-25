@@ -1,7 +1,3 @@
-"""This node uses the laser scan measurement pointing straight ahead from
-the robot and compares it to a desired set distance.  The forward velocity
-of the robot is adjusted until the robot achieves the desired distance"""
-
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
