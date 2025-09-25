@@ -21,6 +21,7 @@ setup(
         "console_scripts": [
             "draw_triangle = ros_behaviors_fsm.draw_triangle:main",
             "wall_following = ros_behaviors_fsm.wall_follower:main",
+            "teleop = ros_behaviors_fsm.teleop:main"
         ],
     },
 )
