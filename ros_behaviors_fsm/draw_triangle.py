@@ -9,60 +9,70 @@ import math
 
 
 class drawTriNode(Node):
+    """ A class that causes the Neato to drive in an equilateral triangle and stop when a bump sensor is activated"""
     def __init__(self):
         super().__init__('draw_triangle')
-        self.estop = Event()
         # velpub publishes to the cmd_vel topic
         self.velpub = self.create_publisher(Twist, 'cmd_vel', 10)
         # every time something is published to the estop topic, the handle_estop function will run
-        self.create_subscription(Bump, "e_stop", self.handle_estop, 10)
+        self.bump_state = False
+        self.create_subscription(Bump, "bump", self.handle_bump, 10)
         # creates separate thread so while listening for estop, neato is making triangle
-        self.run_triloop_thread = Thread(target=self.run_triangle)
-        self.run_triangle.start()
+        self.run_triloop_thread = Thread(target=self.run_loop)
+        self.run_triloop_thread.start()
 
 
-    def handle_estop(self, msg):
-    # msg is the boolean value sent from the subscription to the estop topic
-        if msg.data: # only runs if estop topic sends True for boolean val
-            self.estop.set()
-            self.drive(linear=0.0, angular=0.0)
+    def handle_bump(self, msg):
+        """Function to change the bump state variable based on whether any of the four Bump sensors have been activated
+        
+        Args: 
+            msg: 0 or 1 from Bump class, represeting whether bump sensor has been activated (1) or not (0)
+        """
+        if msg.left_front == 1 or msg.right_front == 1 or msg.left_side == 1 or msg.right_side == 1:
+            self.bump_state = True
     
     def drive(self, linear, angular):
+        """ Publishes cmd_vel to Twist topic to set Neato linear and angular velocities
+        Args: 
+            linear: linear velocity in m/s
+            angular: angular velocity in rad/s
+        """
         msg = Twist()
         msg.linear.x = linear
         msg.angular.z = angular
         self.velpub.publish(msg)
     
     def turn_tri(self):
+        """Turns Neato 120 degrees based on set angular velocity as long as bump sensors are not activated """
         ang_vel = 0.3
-        if not self.estop.set():
-            # as long as estop is false, only turn
+        if self.bump_state == False:
             self.drive(linear= 0.0, angular= ang_vel)
-            # continues to turn for x number of seconds that completes 120 degrees based on ang_vel
-            sleep((math.pi*2)/(3*ang_vel))
-            # stops neato at rotation spot
+            sleep(((math.pi/ang_vel)*(2/3)))
             self.drive(linear=0.0, angular=0.0)
 
     def drive_straight(self, distance):
+        """ Drives Neato in straight line based on specified velocity as long as bump sensors are not activated 
+        Args:
+            distance: specified distance for each side of triangle (meters)
+        
+        """
         forward_vel = 0.1
-        # if no estop, drive straight
-        if not self.estop.is_set():
+        if self.bump_state == False:
             self.drive(linear=forward_vel, angular=0.0)
-            sleep(distance/forward_vel)
-            self.drive(linear=0.0, angular=0.0)
+        sleep(distance/forward_vel)
+        self.drive(linear=0.0, angular=0.0)
 
 
 
-    def run_triangle(self):
-        # callback function used to execute drawing a triangle when thread starts, keeps looping
-        # until square finished or estop pressed
-        self.drive(0.0, 0.0)
+    def run_loop(self):
+        """ Draws one triangle and terminates loop if any bump sensor is activated """
         sleep(1)
+        
         for _ in range(3):
-            if not self.estop.is_set():
+            if self.bump_state == False:
                 print("driving forward")
                 self.drive_straight(0.5)
-            if not self.estop.is_set():
+            if self.bump_state == False:
                 print("turning")
                 self.turn_tri()
         print('done with run loop')
