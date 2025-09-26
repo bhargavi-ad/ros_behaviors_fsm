@@ -3,6 +3,10 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from neato2_interfaces.msg import Bump
 from enum import Enum
+import tty
+import select
+import sys
+import termios
 
 # Import the individual behavior classes
 from teleop import teleopNode
@@ -47,8 +51,14 @@ class FiniteStateController(Node):
         # Velocity publisher for emergency stop
         self.vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
 
+        # Terminal input handling
+        self.settings = termios.tcgetattr(sys.stdin)
+
         # Main control loop
         self.create_timer(0.1, self.run_fsm)
+
+        # Print initial menu
+        self.print_menu()
 
     def handle_bump(self, msg):
         """Handle bump sensor activation - emergency stop"""
@@ -61,6 +71,31 @@ class FiniteStateController(Node):
             self.emergency_stop = True
             self.transition_to_state(RobotState.EMERGENCY_STOP)
             self.get_logger().warn("Emergency stop activated!")
+
+    def print_menu(self):
+        """Print available commands to user"""
+        print("\n" + "=" * 50)
+        print("NEATO ROBOT FINITE STATE MACHINE")
+        print("=" * 50)
+        print("Available commands:")
+        print("  't' - Start Teleop mode (manual control)")
+        print("  'r' - Start Draw Triangle mode")
+        print("  'w' - Start Wall Follow mode")
+        print("  's' - Stop current behavior (return to IDLE)")
+        print("  'e' - Emergency stop")
+        print("  'q' - Quit program")
+        print("  'h' - Show this help menu")
+        print("=" * 50)
+        print(f"Current state: {self.current_state.value}")
+        print("=" * 50)
+
+    def get_key(self):
+        """Get key press from terminal"""
+        tty.setraw(sys.stdin.fileno())
+        select.select([sys.stdin], [], [], 0)
+        key = sys.stdin.read(1)
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
+        return key
 
     def transition_to_state(self, new_state):
         """Transition to a new state, cleaning up previous state"""
@@ -131,6 +166,33 @@ class FiniteStateController(Node):
         if self.emergency_stop and self.current_state == RobotState.EMERGENCY_STOP:
             self.emergency_stop = False
             self.transition_to_state(RobotState.IDLE)
+            return
+
+        # Handle user input
+        key = self.get_key()
+
+        if key == "t" and self.current_state != RobotState.TELEOP:
+            self.transition_to_state(RobotState.TELEOP)
+
+        elif key == "r" and self.current_state != RobotState.DRAW_TRIANGLE:
+            self.transition_to_state(RobotState.DRAW_TRIANGLE)
+
+        elif key == "w" and self.current_state != RobotState.WALL_FOLLOW:
+            self.transition_to_state(RobotState.WALL_FOLLOW)
+
+        elif key == "s":
+            self.transition_to_state(RobotState.IDLE)
+
+        elif key == "e":
+            self.emergency_stop = True
+            self.transition_to_state(RobotState.EMERGENCY_STOP)
+
+        elif key == "h":
+            self.print_menu()
+
+        elif key == "q":
+            self.get_logger().info("Shutting down...")
+            rclpy.shutdown()
             return
 
         # Spin the active behavior
