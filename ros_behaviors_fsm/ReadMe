@@ -1,13 +1,75 @@
-Drive in a Triangle:
+# COMP Robo Project 1
+The goal of our project is to familiarize ourself with tools such as Ros2, Rviz, RQT, VScode, and the standard terminal to understand the fundamentals of Robotics. This project involves causing a Neato to switch between three different states: Teleop, Drive in Triangle, and Obstacle avoidance. Through this project, we learned the fundamentals of using bump sensors, and various nodes and topics to control the sending and recieving of data from our terminal to a Neato.
+
+## TELEOP
+
+We programmed robot teleoperation (a teleop node) that uses the user’s keyboard input to control the Neato. The teleop script runs a loop that repeatedly checks if a key is being pressed, then sends the information to the neato. Below are the keystrokes that can be taken as input:
+
+W: Move the neato forward
+
+A: Turns the neato right
+
+S: Turns the neato left
+
+D: Move the neato backwards
+
+### Structure:
+To implement this node, we used the get_key() sample code that was provided to us, and the geometry_msgs package to cause certain keypresses to change the Neato's wheel velocities. A simple diagram depicting the teleop node and the cmd_vel topic can be seen below:
+
+ ![here](image.png)
+
+To switch to another mode, press the key corresponding to the desired mode:
+
+R: Draw triangle
+
+W: Wall-follow
+
+S: Stop
+
+E: Emergency stop 
+
+Q: Quit
+
+H: Help menu
+
+### Limitations:
+Our teleop function does not support multiple key presses at once. For instance, you can’t press “w” and “d” simultaneously to make the robot go diagonally. Another limitation this method has is controlling the speed of the Neato. The neato will always move at a rate of 0.2 meters per second when moving linearly, and will always turn at a rate of 0.5 meters per second. 
+
+
+
+## Drive in a Triangle:
 
 Concept:
 The draw_triangle node has the Neato draw one equaliteral triangle before stopping. Throughout the entire time the Neato is drawing a triangle, if the Neato bumps into any object and activates one of its four bump sensors, the Neato will automatically stop driving. 
 
-Structure:
+### Structure:
 
 This node is multi-threaded. This means that it is constantly checking whether the bump sensor has been activated as it runs the "run triangle" loop. This multi-thread structure allows for both processes happen simultaneously. The benefit of this is that the neato can and will be interrupted at any instance of the neato running into an object, preventing the motors from inadvertantly stalling.
 
+![alt text](image-1.png)
+
 This node publishes the neato wheel velocity to the topic "cmd_vel". A new value is published every time the Neato drives straight, turns, or stops. This node is also subscribed to the topic "Bump". A callback function runs each time the value published to topic "Bump" changes. A value of 0 from the sensor means that no object is touching the bump sensor and 1 means that an object has activated one of the four sensors located on the neato. When the callback function runs, the value of the variable controlling the state of the bump sensor changes. This variable can then be used to determine whether the loop running the Neato must stop. 
 
-Limitation:
-One limitation of this method is that the movement of the Neato is dependent on the internal, ideal clock of the Neato. In order to turn 120 degrees, the current structure takes into account the angular velocity of the neato and sets a sleep for the appropriate amoutn of time until the Neato would have completed 120 degrees. The same method is used to have the Neato drive a certain distance based on its linear velocity. However, a major drawback of this is that the Neato doesn't move the same in real life as it does in simulation. Factors such as friction and the robots inertia change the speed at which the Neato can stop, turn, and drive. This means that the timing is not entirely accurate and the angle turns or distance driving in real life is not representative of the exact value determined via simulation
+### Limitations:
+One limitation of this method is that the movement of the Neato is dependent on the internal, ideal clock of the Neato. In order to turn 120 degrees, the current structure takes into account the angular velocity of the neato and sets a sleep for the appropriate amoutn of time until the Neato would have completed 120 degrees. The same method is used to have the Neato drive a certain distance based on its linear velocity. However, a major drawback of this is that the Neato doesn't move the same in real life as it does in simulation. Factors such as friction and the robots inertia change the speed at which the Neato can stop, turn, and drive. This means that the timing is not entirely accurate and the angle turns or distance driving in real life is not representative of the exact value determined via simulation.
+
+
+
+
+## Obstacle Avoidance:
+The obstacle avoidance node allows the neato to stop a safe distance away from an obstacle. The neato practices portion control to avoid colliding into walls and other obstacles using its sensor data.
+
+### Structure:
+This node subscribes to the Neato's scan topic to measure its distance from an obsticle. Similar to the Teleop node, this obstancle avoidance node runs a control loop every 0.1 ms to repeatedly check for obstacles that are within the target distance of 1.2 meters. If no obstacle is detected the Neato will continue driving foward at a steady speed of 0.15 meters per second. If an obstacle is detected, the neato changes the forward velocity by: the (measured distance - target distance) * proportional gain (0.4). We also set safety limits by specifying a maximum and minimum velocity for the neato to ensure it travels at a reasonable speed. A diagram depicting this node's interactions can be viewed below:
+
+![alt text](image-2.png)
+
+### Limitations:
+Our current iteration of obstacle avoidance focuses on linear velocity as apposed to angular velocity, which means the Neato will consider obstacles in front of it. Therefore, if the neato approaches an angled wall or there are external obstacles around the sides of the Neato, the behavior might be different than what we expect. Our code also assumes all the data it recieves from the Neato is correct, without anticipating for potential dropouts in its readings.
+
+# Reflection
+This project was particularly challenging for our group due to the technical challenges we faced from the beginning of the semester. We believe although the issues weren't caused by the robots themselves, the technical difficulties as a whole demonstrate the ongoing process of debugging in robotics. We learned the value in persisting with several different methods to change frustrating results, which is often what robotics is about. 
+
+That being said, we do feel that this project provided a solid foundation to sensory motor loops, and writing ROS nodes and topics. A tool that was particularly helpful in testing our code was Gazebo. It was helpful in testing whether or nodes worked without needing access to a Neato. 
+
+Another key takeaway from this project is that it's much easier to solve problems during office hours or meetups with the team. Often, other perspectives can lead to much quicker answers to questions you might have. 
