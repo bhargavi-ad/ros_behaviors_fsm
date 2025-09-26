@@ -24,8 +24,8 @@ class WallApproachNode(Node):
 
         # Control parameters
         self.distance_to_obstacle = None
-        self.Kp = 0.4  # Proportional gain
-        self.target_distance = 1.2  # Desired distance to wall (meters)
+        self.Kp = 0.5  # Proportional gain
+        self.target_distance = 0.5  # Desired distance to wall (meters)
 
         # Safety limits
         self.max_linear_vel = 0.3  # Maximum linear velocity
