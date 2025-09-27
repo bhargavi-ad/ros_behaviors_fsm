@@ -36,28 +36,28 @@ class WallApproachNode(Node):
         """Main control loop for wall following"""
         msg = Twist()
 
-        #if self.distance_to_obstacle is None:
+        if self.distance_to_obstacle is None:
             # No obstacle detected, move forward at moderate speed
-            #msg.linear.x = 0.15
-            #msg.angular.z = 0.0
-        #else:
+            msg.linear.x = 0.15
+            msg.angular.z = 0.0
+        else:
             # Calculate error and apply proportional control
-        error = self.distance_to_obstacle - self.target_distance
-        linear_vel = self.Kp * error
+            error = self.distance_to_obstacle - self.target_distance
+            linear_vel = self.Kp * error
 
-        # Apply safety limits
-        linear_vel = max(self.min_linear_vel, min(self.max_linear_vel, linear_vel))
+            # Apply safety limits
+            linear_vel = max(self.min_linear_vel, min(self.max_linear_vel, linear_vel))
 
-        msg.linear.x = linear_vel
-        msg.angular.z = 0.0
+            msg.linear.x = linear_vel
+            msg.angular.z = 0.0
 
-        # Log current behavior
-        self.get_logger().debug(
-            f"Distance: {self.distance_to_obstacle:.2f}m, "
-            f"Target: {self.target_distance:.2f}m, "
-            f"Error: {error:.2f}m, "
-            f"Velocity: {linear_vel:.2f}m/s"
-        )
+            # Log current behavior
+            self.get_logger().debug(
+                f"Distance: {self.distance_to_obstacle:.2f}m, "
+                f"Target: {self.target_distance:.2f}m, "
+                f"Error: {error:.2f}m, "
+                f"Velocity: {linear_vel:.2f}m/s"
+            )
 
         self.vel_pub.publish(msg)
 
