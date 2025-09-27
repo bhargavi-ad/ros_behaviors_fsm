@@ -7,11 +7,12 @@ import tty
 import select
 import sys
 import termios
+from time import sleep
 
 # Import the individual behavior classes
-from teleop import teleopNode
-from draw_triangle import drawTriNode
-from wall_follower import WallApproachNode
+from ros_behaviors_fsm.teleop import teleopNode
+from ros_behaviors_fsm.draw_triangle import drawTriNode
+from ros_behaviors_fsm.wall_follower import WallApproachNode
 
 
 class RobotState(Enum):
@@ -70,7 +71,11 @@ class FiniteStateController(Node):
         ):
             self.emergency_stop = True
             self.transition_to_state(RobotState.EMERGENCY_STOP)
-            self.get_logger().warn("Emergency stop activated!")
+            self.get_logger().warn("Emergency stop activated! Wait 10 Seconds")
+            self.transition_to_state(RobotState.TELEOP)
+            sleep(10)
+            
+            
 
     def print_menu(self):
         """Print available commands to user"""
@@ -80,8 +85,8 @@ class FiniteStateController(Node):
         print("Available commands:")
         print("  't' - Start Teleop mode (manual control)")
         print("  'r' - Start Draw Triangle mode")
-        print("  'w' - Start Wall Follow mode")
-        print("  's' - Stop current behavior (return to IDLE)")
+        print("  'f' - Start Wall Follow mode")
+        print("  'i' - Stop current behavior (return to IDLE)")
         print("  'e' - Emergency stop")
         print("  'q' - Quit program")
         print("  'h' - Show this help menu")
@@ -163,10 +168,11 @@ class FiniteStateController(Node):
             return
 
         # Reset emergency stop if no longer active
-        if self.emergency_stop and self.current_state == RobotState.EMERGENCY_STOP:
-            self.emergency_stop = False
-            self.transition_to_state(RobotState.IDLE)
-            return
+        
+        #if self.emergency_stop and self.current_state == RobotState.EMERGENCY_STOP:
+            #self.emergency_stop = False
+            #self.transition_to_state(RobotState.IDLE)
+            #return
 
         # Handle user input
         key = self.get_key()
@@ -177,10 +183,10 @@ class FiniteStateController(Node):
         elif key == "r" and self.current_state != RobotState.DRAW_TRIANGLE:
             self.transition_to_state(RobotState.DRAW_TRIANGLE)
 
-        elif key == "w" and self.current_state != RobotState.WALL_FOLLOW:
+        elif key == "f" and self.current_state != RobotState.WALL_FOLLOW:
             self.transition_to_state(RobotState.WALL_FOLLOW)
 
-        elif key == "s":
+        elif key == "i":
             self.transition_to_state(RobotState.IDLE)
 
         elif key == "e":
