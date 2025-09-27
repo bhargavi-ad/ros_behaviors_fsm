@@ -8,6 +8,7 @@ import select
 import sys
 import termios
 from time import sleep
+from rclpy.executors import MultiThreadedExecutor
 
 # Import the individual behavior classes
 from ros_behaviors_fsm.teleop import teleopNode
@@ -73,7 +74,7 @@ class FiniteStateController(Node):
             self.transition_to_state(RobotState.EMERGENCY_STOP)
             self.get_logger().warn("Emergency stop activated! Wait 10 Seconds")
             self.transition_to_state(RobotState.TELEOP)
-            sleep(10)
+            #sleep(10)
             
             
 
@@ -144,7 +145,7 @@ class FiniteStateController(Node):
         elif state == RobotState.DRAW_TRIANGLE:
             self.triangle_behavior = drawTriNode()
             self.get_logger().info("Started Draw Triangle behavior")
-
+            
         elif state == RobotState.WALL_FOLLOW:
             self.wall_follow_behavior = WallApproachNode()
             self.get_logger().info("Started Wall Follow behavior")
@@ -203,11 +204,11 @@ class FiniteStateController(Node):
 
         # Spin the active behavior
         if self.teleop_behavior:
-            rclpy.spin_once(self.teleop_behavior, timeout_sec=0.001)
+            rclpy.spin_once(self.teleop_behavior, timeout_sec=0.2)
         elif self.triangle_behavior:
-            rclpy.spin_once(self.triangle_behavior, timeout_sec=0.001)
+            rclpy.spin_once(self.triangle_behavior, timeout_sec=0.2)
         elif self.wall_follow_behavior:
-            rclpy.spin_once(self.wall_follow_behavior, timeout_sec=0.001)
+            rclpy.spin_once(self.wall_follow_behavior, timeout_sec=0.2)
 
     def set_state(self, new_state):
         """Public method to set the FSM state from external code"""
